@@ -125,11 +125,14 @@ BEGIN
       v_hf     := (ARRAY['18:00','23:30','02:00','03:00','04:00'])[1 + (i % 5)]::TIME;
       v_inv    := 30 + ((i * 17 + e * 7) % 90);
 
+      -- nombre_homenajeado: en la base real (Supabase) la columna es NOT NULL
       INSERT INTO eventos (id_empresa, id_cliente, id_tipo_evento, id_usuario, nombre,
+                           nombre_homenajeado,
                            fecha_evento, hora_inicio, hora_fin,
                            cant_invitados_estimada, estado, monto_total)
       VALUES (v_emp, v_cli, v_tipo, v_usr,
               'Evento demo ' || e || '-' || i,
+              (ARRAY['Lucía','Martín','Sofía','Diego','Valentina','Nicolás','Camila','Tomás'])[1 + (i % 8)],
               v_fecha, v_hi, v_hf, v_inv, v_estado, 0)
       RETURNING id_evento INTO v_ev;
 

@@ -85,10 +85,23 @@ daría negativa. Ej.: 22:00→04:00 = 6 h.
 3. **"Pagado" = pagos con estado `aprobado`.**
 4. `dim_fecha` cubre 2024–2032; ampliar el rango si hace falta.
 
+## Procedimientos y verificación (consignas 5 y 6)
+| Objeto | Para qué | Cómo se llama |
+|---|---|---|
+| `dw.sp_cargar_dw()` | **Procedimiento almacenado** de carga: vacía, carga dimensiones y después hechos con `INSERT ... SELECT`, y corre los controles | `CALL dw.sp_cargar_dw();` |
+| `dw.fn_control_totales()` | 20 controles: dimensiones, grano, eventos por estado, cada medida contra `public.*`, y diferencias por empresa y por mes | `SELECT * FROM dw.fn_control_totales();` |
+| `dw.p1_...` a `dw.p4_...` | Una función por pregunta de negocio (`03_procedimientos_preguntas.sql`) | `SELECT * FROM dw.p1_facturacion_empresa_mes();` |
+| `dw.fn_control_preguntas()` | Compara el total de cada respuesta con el origen | `SELECT * FROM dw.fn_control_preguntas();` |
+
+- Si un control da `FALLA`, `sp_cargar_dw()` lanza una excepción y **toda la carga se revierte**
+  (el DW queda como estaba). Por ejemplo, un evento con estado desconocido ya no se pierde en silencio.
+- Las preguntas son *funciones* y no *procedures* porque en PostgreSQL un procedure no devuelve filas.
+
 ## Cómo ejecutarlo (con la base ya migrada a Supabase)
 1. Conectarse a la base en pgAdmin (las credenciales las tiene tu compañero).
-2. Query Tool → abrir y ejecutar `01_dw_eventos.sql` (crea el esquema `dw` y carga).
-   La última consulta debe mostrar `eventos_origen = filas_fact` y `total_origen = total_dw`.
-3. Ejecutar `02_consultas.sql` para las preguntas de negocio.
-4. Para recargar después de nuevos eventos, volver a correr `01_dw_eventos.sql`
-   (borra y recrea `dw`; las tablas operativas no se tocan).
+2. Query Tool → ejecutar `01_dw_eventos.sql`: crea el esquema `dw` (con `IF NOT EXISTS`, no borra nada),
+   la función de control y el procedimiento, carga y muestra los controles (todos deben decir `OK`).
+   Si se cambia el diseño del DW hay que borrar antes el esquema: `DROP SCHEMA dw CASCADE;`.
+3. Ejecutar `03_procedimientos_preguntas.sql` una vez, y después llamar a cada pregunta
+   (`SELECT * FROM dw.p1_...()`) y a `dw.fn_control_preguntas()`. `02_consultas.sql` tiene las mismas consultas sueltas.
+4. Para recargar después de nuevos eventos: `CALL dw.sp_cargar_dw();` (no hace falta volver a crear nada).

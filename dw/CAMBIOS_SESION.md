@@ -630,3 +630,18 @@ estados de evento. Ver sección 10.
   el DW cargó 84 de 84 filas con totales iguales, las 5 consultas devolvieron
   rankings con 6 empresas, y la limpieza (bloque comentado al final) funcionó.
   No se corrió contra Supabase.
+
+### 2026-11-20: procedimientos y verificación completa
+- `01_dw_eventos.sql`: el ETL pasó a `dw.sp_cargar_dw()` (procedimiento almacenado, consigna 6).
+  Agrega `dw.fn_control_totales()` con 20 controles contra `public.*`; si alguno falla, la carga se revierte.
+- Nuevo `03_procedimientos_preguntas.sql`: `dw.p1_...` a `dw.p4_...` (una función por pregunta) y
+  `dw.fn_control_preguntas()` que compara cada respuesta con la base operativa (consigna 5).
+- Probado en un `postgres:16-alpine` descartable con el seed demo (84 eventos): carga OK, 20/20 y 9/9 controles OK,
+  re-ejecución idempotente, y con un evento de estado `anulado` la carga falla y deja el DW intacto.
+- No se probó contra Supabase real.
+
+### 2026-11-20 (b): versión combinada de `01_dw_eventos.sql`
+- Se combinó la versión de Descargas (estructura con `IF NOT EXISTS`, `::INT` en los subíndices de arrays,
+  bloque opcional de `pg_cron`) con los 20 controles de `fn_control_totales()`. `sp_cargar_dw()` revierte si falla alguno.
+- Probado en `postgres:16-alpine` descartable: 1ra y 2da corrida OK (20/20), `03` ejecutado dos veces (9/9),
+  y con un estado desconocido la carga se revierte dejando la fact con sus 84 filas.
