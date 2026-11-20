@@ -69,7 +69,8 @@ dim_tipo_evento ---- fact_eventos ---- dim_fecha
 
 | Archivo | Para qué sirve |
 |---|---|
-| `01_dw_eventos.sql` | **Se ejecuta primero.** Crea el esquema `dw` (4 dimensiones y la fact) y carga los datos desde `public`. Termina con un control de calidad. |
+| `00_seed_empresas_demo.sql` | **Opcional, va antes de todo.** Agrega 6 empresas demo con 84 eventos para que el DW tenga datos que comparar. |
+| `01_dw_eventos.sql` | **Se ejecuta después del seed.** Crea el esquema `dw` (4 dimensiones y la fact) y carga los datos desde `public`. Termina con un control de calidad. |
 | `02_consultas.sql` | Una consulta por cada pregunta de negocio. Se ejecuta después. |
 | `EXPLICACION.md` | Resumen de conceptos para el coloquio (grano, estrella, `sk_`, dimensión degenerada, medidas). |
 | `CAMBIOS_SESION.md` | Este documento: el detalle técnico completo. |
@@ -620,3 +621,12 @@ estados de evento. Ver sección 10.
 - **2026-11-19, esta reescritura:** se reorganizó este documento como guía de
   estudio, con ejemplo numérico, resultados de las consultas y preguntas del
   coloquio.
+- **2026-11-19, datos demo:** se agregó `00_seed_empresas_demo.sql`. Supabase tenía
+  muy pocos datos (4 eventos, 2 pagos) y las consultas devolvían 1 o 2 filas. El
+  seed crea 6 empresas (CUIT `30-5550xxxx-x`) con 14 eventos cada una (84 en total):
+  estados, tipos, meses, pagos aprobados y pendientes variados, eventos sin
+  servicios y cancelados con seña. Es idempotente y no toca empresas existentes. Se
+  ejecuta **antes** de `01_dw_eventos.sql`. Probado en un contenedor descartable:
+  el DW cargó 84 de 84 filas con totales iguales, las 5 consultas devolvieron
+  rankings con 6 empresas, y la limpieza (bloque comentado al final) funcionó.
+  No se corrió contra Supabase.
